@@ -1,0 +1,150 @@
+/*
+Written By: Cody Boyd - 0749033
+Date: 7/21/2023
+INFO-1156
+Fanshawe College
+*/
+
+
+#include "csv2htmlconverter.h"
+#include <iostream>
+#include <string>
+#include <vector>
+#include <fstream>
+
+int main(int argc, char* argv[])
+{
+    if (argc < 2 || argc > 4) 
+    {
+        std::cout << "Error: Incorrect number of arguments.\n";
+        return 1;
+    }
+
+    std::string inputFile;
+    std::string outputFile;
+    bool isHeader = false; // to track the -h switch
+    bool conversionMetrics = false; // to track the -r switch
+    bool noBorder = false; // to track the -n switch
+    for (int i = 1; i < argc; ++i) 
+    {
+        std::string arg = argv[i];
+        if (arg[0] == '-') // Checks if the argument is a switch
+        {
+            if (arg == "--help") 
+            {
+                std::cout << "\ncsv2html v1.0, (c)2023, Cody Boyd\n\n";
+                std::cout << "usage: csv2html [--help] [-hrnq] csvFilename [htmlFilename] [--(bg|background) Args...] [--(fg|foreground) Args...]\n\n";
+                std::cout << "    --help          display the help text for the program.\n";
+                std::cout << "    -h              first line is the table header\n";
+                std::cout << "    -r              report conversion metrics\n";
+                std::cout << "    -n              no border\n";
+                std::cout << "    -q              strip quotes, commas inside quotes are not delimiters\n\n";
+                std::cout << "    csvFilename     the name of the ASCII csv file to process\n";
+                std::cout << "    htmlFilename    the name of the HTML file receiving the output.\n";
+                std::cout << "                    If not provided the csv filename will be used\n";
+                std::cout << "                    with its extension changed to \".html\"\n\n";
+                std::cout << "    --bg,           background-colors for rows (first is header, then cycle)\n";
+                std::cout << "    --background    where the colors are HTML/CSS compatible encoding\n\n";
+                std::cout << "    --fg,           foreground-colors for row (first is header, then cycle)\n";
+                std::cout << "    --foreground    where the colors are HTML/CSS compatible encoding\n";
+                return 0;
+            }
+            else 
+            {
+                for (size_t j = 1; j < arg.size(); ++j) 
+                { 
+                    if (arg[j] == 'h') {
+                        isHeader = true;
+                    }
+                    else if (arg[j] == 'r') {
+                        conversionMetrics = true;
+                    }
+                    else if (arg[j] == 'n') {
+                        noBorder = true;
+                    }
+                    else if (arg[j] == 'q') {
+                        
+                    }
+                    else {
+                        std::cout << "Error: unknown switch \"" << arg[j] << "\"\n";
+                        return 1;
+                    }
+                }
+            }
+        }
+        else // if the argument is not a switch, it's a filename
+        {
+            if (inputFile.empty()) 
+            {
+                inputFile = arg;
+            }
+            else if (outputFile.empty()) 
+            {
+                outputFile = arg;
+            }
+            else 
+            {
+                std::cout << "Too many files specified.\n";
+                return 1;
+            }
+        }
+    }
+
+    if (inputFile.empty())
+    {
+        std::cout << "No input file specified.\n";
+        return 1;
+    }
+
+    if (outputFile.empty()) 
+    {
+        outputFile = inputFile.substr(0, inputFile.rfind('.')) + ".html";
+    }
+
+    if (inputFile == outputFile) 
+    {
+        std::cout << "Error: Input and output file cannot have the same name.\n";
+        return 1;
+    }
+
+    // ensure input file is valid
+    std::ifstream ifile(inputFile);
+    if (!ifile) 
+    {
+        std::cout << "Error: .csv filename \"" << inputFile << "\" --> No such file or directory\n";
+        return 1;
+    }
+
+    // check if the output file can be created.
+    std::ofstream ofile(outputFile);
+    if (!ofile) 
+    {
+        std::cout << "Error: Cannot open output file.\n";
+        return 1;
+    }
+
+    // CSV to HTML converter.
+    csv2htmlconverter converter;
+    try 
+    {
+        // convert the CSV file to an HTML file.
+        converter.convert(inputFile, outputFile, isHeader, noBorder);
+    }
+    catch (const std::exception& e) 
+    {
+        // if an exception was thrown during the conversion
+        std::cout << "Error: " << e.what() << "\n";
+        return 1;
+    }
+
+    if (conversionMetrics) 
+    {
+        int linesProcessed = converter.convert(inputFile, outputFile, isHeader, noBorder);
+        std::cout << "# lines input = " << linesProcessed << "\n";
+    }
+    else 
+    {
+        converter.convert(inputFile, outputFile, isHeader, noBorder);
+    }
+    return 0;
+}
